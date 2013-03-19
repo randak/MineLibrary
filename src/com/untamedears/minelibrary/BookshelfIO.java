@@ -30,7 +30,11 @@ public class BookshelfIO {
 		int item = 0;
 		for(ItemStack is : i) {
 			this.plugin.getLogger().info("[" + item + "]");
-			if(is != null && is.hasItemMeta() && is.getItemMeta() instanceof BookMeta) {
+			
+			String bookStr = "books."+loc+"."+item+".";
+			
+			//if it's a book
+			if(is != null && is.hasItemMeta() && (is.getItemMeta() instanceof BookMeta) && is.getType().equals(Material.WRITTEN_BOOK)) {
 				this.plugin.getLogger().info("    isBook: true");
 				BookMeta bm =  ((BookMeta)is.getItemMeta());
 				
@@ -38,16 +42,18 @@ public class BookshelfIO {
 				String title = (bm.hasTitle()) ? bm.getTitle() : "";
 				List<String> pages = (bm.hasPages()) ? bm.getPages() : new ArrayList<String>();
 				
-				this.plugin.getConfig().set("books." + loc + "." + item + ".isBook", true);
-				this.plugin.getConfig().set("books." + loc + "." + item + ".author", author);
-				this.plugin.getConfig().set("books." + loc + "." + item + ".title", title);
-				this.plugin.getConfig().set("books." + loc + "." + item + ".pages", pages);
+				this.plugin.getConfig().set(bookStr + "isBook", true);
+				this.plugin.getConfig().set(bookStr + "author", author);
+				this.plugin.getConfig().set(bookStr + "title", title);
+				this.plugin.getConfig().set(bookStr + "pages", pages);
 				
 				this.plugin.getLogger().info("    author:" + this.plugin.getConfig().getString("books."+loc+"."+item+".author"));
 				this.plugin.getLogger().info("    title:" + this.plugin.getConfig().getString("books."+loc+"."+item+".title"));
-			} else {
+			} else { //if it's not a book, throw it out of inventory
 				this.plugin.getLogger().info("    isBook: false");
-				this.plugin.getConfig().set("books."+loc+"."+item+".isBook", false);
+				this.plugin.getConfig().set(bookStr + "isBook", false);
+				
+				if(is != null) l.getWorld().dropItem(l, is);
 			}
 			item++;
 		}
@@ -65,7 +71,6 @@ public class BookshelfIO {
 		String loc = "" + x + "" + y + "" + z;
 		this.plugin.getLogger().info("reading location: " + "books."+loc);
 		
-//		if(this.plugin.getConfig().contains("books."+loc)) {
 		ItemStack[] inventory = new ItemStack[9];
 		
 		for(int i = 0; i < 9; i++) {
@@ -105,8 +110,5 @@ public class BookshelfIO {
 		this.plugin.getLogger().info("---------------end reading----------------");
 		
 		return inventory;
-//		}
-		
-//		return null;
 	}
 }
