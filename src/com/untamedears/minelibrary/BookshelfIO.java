@@ -6,6 +6,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -21,17 +22,11 @@ public class BookshelfIO {
 	public void saveBookshelf(Inventory i, Location l) {
 		String loc = this.getLocString(l);
 		
-		this.plugin.getLogger().info("saving location: " + "books."+loc+".[number].isBook");
-		
 		int item = 0;
 		for(ItemStack is : i) {
-			this.plugin.getLogger().info("[" + item + "]");
-			
 			String bookStr = "books."+loc+"."+item+".";
-			
 			//if it's a book
 			if(is != null && is.hasItemMeta() && (is.getItemMeta() instanceof BookMeta) && is.getType().equals(Material.WRITTEN_BOOK)) {
-				this.plugin.getLogger().info("    isBook: true");
 				BookMeta bm =  ((BookMeta)is.getItemMeta());
 				
 				String author = (bm.hasAuthor()) ? bm.getAuthor() : "";
@@ -42,11 +37,7 @@ public class BookshelfIO {
 				this.plugin.getConfig().set(bookStr + "author", author);
 				this.plugin.getConfig().set(bookStr + "title", title);
 				this.plugin.getConfig().set(bookStr + "pages", pages);
-				
-				this.plugin.getLogger().info("    author:" + this.plugin.getConfig().getString("books."+loc+"."+item+".author"));
-				this.plugin.getLogger().info("    title:" + this.plugin.getConfig().getString("books."+loc+"."+item+".title"));
 			} else { //if it's not a book, throw it out of inventory
-				this.plugin.getLogger().info("    isBook: false");
 				this.plugin.getConfig().set(bookStr + "isBook", false);
 				
 				if(is != null) l.getWorld().dropItem(l, is);
@@ -56,31 +47,22 @@ public class BookshelfIO {
 		
 		this.plugin.saveConfig();
 		this.plugin.reloadConfig();
-		
-		this.plugin.getLogger().info("---------------end saving----------------");
 	}
 	
 	public ItemStack[] readBookshelf(Location l) {
-		int x = (int)l.getX();
-		int y = (int)l.getY();
-		int z = (int)l.getZ();
-		
-		String loc = "" + x + "" + y + "" + z;
-		this.plugin.getLogger().info("reading location: " + "books."+loc);
+		String loc = this.getLocString(l);
 		
 		ItemStack[] inventory = new ItemStack[9];
 		
+		FileConfiguration c = this.plugin.getConfig();
+		
 		for(int i = 0; i < 9; i++) {
-			this.plugin.getLogger().info("[" + i + "]");
-			if(this.plugin.getConfig().getBoolean("books."+loc+"."+i+".isBook")) {
-				this.plugin.getLogger().info("    isBook: true");
+			String bookStr = "books."+loc+"."+i+".";
+			if(c.getBoolean(bookStr+"isBook")) {
 				
-				String author = this.plugin.getConfig().getString("books."+loc+"."+i+".author");
-				String title = this.plugin.getConfig().getString("books."+loc+"."+i+".title");
-				List<String> pages = this.plugin.getConfig().getStringList("books."+loc+"."+i+".pages");
-				
-				this.plugin.getLogger().info("    author:" + author);
-				this.plugin.getLogger().info("    title:" + title);
+				String author = c.getString(bookStr+"author");
+				String title = c.getString(bookStr+"title");
+				List<String> pages = c.getStringList(bookStr+"pages");
 				
 				ItemStack is = new ItemStack(Material.WRITTEN_BOOK, 1);
 				
@@ -92,29 +74,18 @@ public class BookshelfIO {
 				
 				is.setItemMeta(bookMeta);
 				
-				this.plugin.getLogger().info("Author set? " + is.getItemMeta().serialize());
-				
 				inventory[i] = is;
 			} else {
-				this.plugin.getLogger().info("    isBook: false");
-				ItemStack is = new ItemStack(Material.AIR, 0);
-				
-				inventory[i] = is;
+				inventory[i] = new ItemStack(Material.AIR, 0);
 			}
 			
 		}
-		
-		this.plugin.getLogger().info("---------------end reading----------------");
 		
 		return inventory;
 	}
 	
 	public void emptyBookshelf(Location l) {
-		String loc = this.getLocString(l);
-		this.plugin.getConfig().set("books."+loc, null);
-		
-		this.plugin.getLogger().info(this.plugin.getConfig().getString("books."+loc));
-		
+		this.plugin.getConfig().set("books."+this.getLocString(l), null);
 		this.plugin.saveConfig();
 		this.plugin.reloadConfig();
 	}

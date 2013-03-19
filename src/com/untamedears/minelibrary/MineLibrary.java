@@ -10,6 +10,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
@@ -32,20 +34,29 @@ public class MineLibrary extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
     	if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getType().equals(Material.BOOKSHELF)) {
-    		Location l = event.getClickedBlock().getLocation();
-    		
-    		BookshelfIO io = new BookshelfIO();
-    		
-    		Inventory i = this.getServer().createInventory(null, 9, "Bookshelf");
-    		
-    		if(io.readBookshelf(l) != null) {
-    			ItemStack[] inv = io.readBookshelf(l);
-       			i.setContents(inv);
+    		if(!event.getPlayer().getItemInHand().getType().isBlock() || !event.getPlayer().isSneaking()) {
+    			Location l = event.getClickedBlock().getLocation();
+        		
+        		BookshelfIO io = new BookshelfIO();
+        		
+        		Inventory i = this.getServer().createInventory(null, 9, "Bookshelf");
+        		
+        		if(io.readBookshelf(l) != null) {
+        			ItemStack[] inv = io.readBookshelf(l);
+           			i.setContents(inv);
+        		}
+        		
+        		inventories.put(event.getPlayer(), l);
+        		
+        		event.getPlayer().openInventory(i);
     		}
-    		
-    		inventories.put(event.getPlayer(), l);
-    		
-    		event.getPlayer().openInventory(i);
+    	}
+    }
+    
+    @EventHandler
+    public void onProjectileLaunch(ProjectileLaunchEvent event) {
+    	if(event.getEntity().getShooter().getTargetBlock(null, 50).getType().equals(Material.BOOKSHELF)) {
+    		event.setCancelled(true);
     	}
     }
     
@@ -74,6 +85,13 @@ public class MineLibrary extends JavaPlugin implements Listener {
     		}
     		
     		io.emptyBookshelf(l);
+    	}
+    }
+    
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+    	if(!event.getPlayer().isSneaking() && event.getBlockAgainst().getType().equals(Material.BOOKSHELF)) {
+    		event.setCancelled(true);
     	}
     }
     
