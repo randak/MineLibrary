@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
@@ -59,4 +60,29 @@ public class MineLibrary extends JavaPlugin implements Listener {
     		inventories.remove(event.getPlayer());
     	}
     }
+    
+    //TODO check compatibility with Citadel so books don't drop when reinforced block is broken
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+    	if(event.getBlock().getType().equals(Material.BOOKSHELF)) {
+    		BookshelfIO io = new BookshelfIO();
+    		Location l = event.getBlock().getLocation();
+    		ItemStack[] inv = io.readBookshelf(l);
+    		
+    		for(ItemStack i : inv) { 
+    			if(i.getType().equals(Material.WRITTEN_BOOK)) event.getBlock().getWorld().dropItem(l, i);
+    		}
+    		
+    		io.emptyBookshelf(l);
+    	}
+    }
+    
+//    Cannot be implemented until PlayerBookSignEvent is a real event
+//    @EventHandler
+//    public void bookListener(PlayerBookSignEvent event) {
+//    	ItemStack is = event.getBook();
+//    	List<String> lore = (is.getItemMeta().hasLore()) ? is.getItemMeta().getLore() : new ArrayList<String>();
+//    	lore.add(ChatColor.GOLD + "" + ChatColor.ITALIC + "First Edition");
+//    	is.getItemMeta().setLore(lore);
+//    }
 }

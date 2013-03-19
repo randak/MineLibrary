@@ -19,11 +19,7 @@ public class BookshelfIO {
 	}
 	
 	public void saveBookshelf(Inventory i, Location l) {
-		int x = (int)l.getX();
-		int y = (int)l.getY();
-		int z = (int)l.getZ();
-		
-		String loc = "" + x + "" + y + "" + z;
+		String loc = this.getLocString(l);
 		
 		this.plugin.getLogger().info("saving location: " + "books."+loc+".[number].isBook");
 		
@@ -59,6 +55,7 @@ public class BookshelfIO {
 		}
 		
 		this.plugin.saveConfig();
+		this.plugin.reloadConfig();
 		
 		this.plugin.getLogger().info("---------------end saving----------------");
 	}
@@ -110,5 +107,23 @@ public class BookshelfIO {
 		this.plugin.getLogger().info("---------------end reading----------------");
 		
 		return inventory;
+	}
+	
+	public void emptyBookshelf(Location l) {
+		String loc = this.getLocString(l);
+		this.plugin.getConfig().set("books."+loc, null);
+		
+		this.plugin.getLogger().info(this.plugin.getConfig().getString("books."+loc));
+		
+		this.plugin.saveConfig();
+		this.plugin.reloadConfig();
+	}
+	
+	private String getLocString(Location l) {
+		int x = (int)l.getX();
+		int y = (int)l.getY();
+		int z = (int)l.getZ();
+		
+		return "" + x + "" + y + "" + z;
 	}
 }
