@@ -95,6 +95,6 @@ public class BookshelfIO {
 		int y = (int)l.getY();
 		int z = (int)l.getZ();
 		
-		return "" + x + "" + y + "" + z;
+		return "" + x + "|" + y + "|" + z;
 	}
 }
