@@ -1,28 +1,28 @@
 package com.untamedears.minelibrary;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
+
+import lib.PatPeter.SQLibrary.SQLite;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class MineLibrary extends JavaPlugin implements Listener {
+public class MineLibrary extends JavaPlugin {
+	private final BookListener bl = new BookListener(this);
+	public SQLite sqlite;
+	public final Logger logger = Logger.getLogger("Minecraft");
+	
 	public Map<Player, Location> inventories = new HashMap<Player, Location>();
+	
 	@Override
     public void onEnable(){
-		this.getServer().getPluginManager().registerEvents(this, this);
+		dbConnect();
+        dbSetup();
+        getServer().getPluginManager().registerEvents(this.bl, this);
 		getLogger().info("MineLibrary has been enabled.");
     }
  
@@ -31,76 +31,21 @@ public class MineLibrary extends JavaPlugin implements Listener {
     	getLogger().info("MineLibrary has been disabled.");
     }
     
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-    	if(event.getAction().equals(Action.RIGHT_CLICK_BLOCK) && event.getClickedBlock().getType().equals(Material.BOOKSHELF)) {
-    		if(!event.getPlayer().getItemInHand().getType().isBlock() || !event.getPlayer().isSneaking()) {
-    			Location l = event.getClickedBlock().getLocation();
-        		
-        		BookshelfIO io = new BookshelfIO();
-        		
-        		Inventory i = this.getServer().createInventory(null, 9, "Bookshelf");
-        		
-        		if(io.readBookshelf(l) != null) {
-        			ItemStack[] inv = io.readBookshelf(l);
-           			i.setContents(inv);
-        		}
-        		
-        		inventories.put(event.getPlayer(), l);
-        		
-        		event.getPlayer().openInventory(i);
-    		}
+    private void dbConnect() {
+    	sqlite = new SQLite(this.logger, "MineLibrary", this.getDataFolder().getAbsolutePath(), "bookshelves");
+    	try {
+    		sqlite.open();
+    	} catch (Exception e) {
+    		logger.info(e.getMessage());
+            getPluginLoader().disablePlugin(this);
     	}
     }
     
-    @EventHandler
-    public void onProjectileLaunch(ProjectileLaunchEvent event) {
-    	if(event.getEntity().getShooter().getTargetBlock(null, 50).getType().equals(Material.BOOKSHELF)) {
-    		event.setCancelled(true);
+    private void dbSetup() {
+    	try {
+    		sqlite.query("CREATE TABLE IF NOT EXISTS shelves (id INTEGER PRIMARY KEY, x INT, y INT, z INT, contents STRING, UNIQUE ( x, y, z ))");
+    	} catch (SQLException e) {
+    		e.printStackTrace();
     	}
     }
-    
-    @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
-    	if(inventories.containsKey(event.getPlayer())) {
-    		Location l = inventories.get(event.getPlayer());
-    		
-    		BookshelfIO io = new BookshelfIO();
-    		io.saveBookshelf(event.getInventory(), l);
-    		
-    		inventories.remove(event.getPlayer());
-    	}
-    }
-    
-    //TODO check compatibility with Citadel so books don't drop when reinforced block is broken
-    @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
-    	if(event.getBlock().getType().equals(Material.BOOKSHELF)) {
-    		BookshelfIO io = new BookshelfIO();
-    		Location l = event.getBlock().getLocation();
-    		ItemStack[] inv = io.readBookshelf(l);
-    		
-    		for(ItemStack i : inv) { 
-    			if(i.getType().equals(Material.WRITTEN_BOOK)) event.getBlock().getWorld().dropItem(l, i);
-    		}
-    		
-    		io.emptyBookshelf(l);
-    	}
-    }
-    
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-    	if(!event.getPlayer().isSneaking() && event.getBlockAgainst().getType().equals(Material.BOOKSHELF)) {
-    		event.setCancelled(true);
-    	}
-    }
-    
-//    Cannot be implemented until PlayerBookSignEvent is a real event
-//    @EventHandler
-//    public void bookListener(PlayerBookSignEvent event) {
-//    	ItemStack is = event.getBook();
-//    	List<String> lore = (is.getItemMeta().hasLore()) ? is.getItemMeta().getLore() : new ArrayList<String>();
-//    	lore.add(ChatColor.GOLD + "" + ChatColor.ITALIC + "First Edition");
-//    	is.getItemMeta().setLore(lore);
-//    }
 }
